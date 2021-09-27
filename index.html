@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Calendar Log App</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <!-- CSS only -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+
+
+  </head>
+  <body class="bg-dark">
+    <nav class="navbar navbar-dark bg-secondary navbar-expand">
+            <div class="container">
+              <div class="col-sm-7 col-xs-6 ">
+
+                  <a class="navbar-brand">Calendar Log</a>
+
+
+
+              </div>
+              <div class="col-sm-5 col-xs-6 d-flex justify-content-end align-items-center">
+
+                
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-list-1" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon"></span>
+                </button>
+                <div id="navbar-list-1">
+                  <ul class="navbar-nav">
+                      <li class="nav-item dropdown">
+                      <a class="nav-link dropdown-toggle p-0" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <img id="profile-img" src="" class="rounded-circle" alt="">
+                      </a>
+                      <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" id="signout_button" href="#">Sign Out</a>
+                      </div>
+                    </li>   
+                  </ul>
+                </div>
+                <button id="authorize_button" class="btn btn-success pl-1">Authorize</button>
+                
+              </div>
+
+            </div>
+
+      </nav>
+      <div class="container">
+          
+
+        <div class="row my-5 py-5 justify-content-center text-center">
+          <div class="col-sm-5 col-xs-4 d-flex justify-content-center">
+            <form >
+              <div class="mb-3">
+                <label for="eventName" class="form-label text-light ">Event name</label>
+                <input type="name" name="eventName" class="form-control mb-2" id="eventName" placeholder="Event" >
+                <!--Start Date -->
+                <input type="hidden" name="eventStartDate" class="form-control" id="eventStartDate" >
+                  <!--End Date -->
+                  <input type="hidden" name="eventEndDate" class="form-control" id="eventEndDate" >
+                  <button type="button" id="eventStarter" class="btn btn-success">Start</button>
+                  <button type="button" id="eventStopper" class="btn btn-danger"  style="display:none">
+                    <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>Stop</button>
+                  <button type="button" id="addevent_button" class="btn btn-warning text-light" style="display:none">Add Event</button>
+              </div>
+
+            </form>
+          </div>
+           
+        </div>
+
+    
+    <!--Add buttons to initiate auth sequence and sign out-->
+
+
+    <pre id="content" style="white-space: pre-wrap;"></pre>
+      </div>
+    
+
+    <script type="text/javascript">
+
+      // Client ID and API key from the Developer Console
+      var CLIENT_ID = '900799657432-oohsc88litj5cia0gk9o6rg0avsd773j.apps.googleusercontent.com';
+      var API_KEY = 'AIzaSyAC2AxYkdQIFZdZ081_PFGw_YP27A8QH9M';
+
+      // Array of API discovery doc URLs for APIs used by the quickstart
+      var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
+
+      // Authorization scopes required by the API; multiple scopes can be
+      // included, separated by spaces.
+      var SCOPES = "https://www.googleapis.com/auth/calendar profile email";
+
+      var authorizeButton = document.getElementById('authorize_button');
+      var signoutButton = document.getElementById('signout_button');
+      var addeventButton = document.getElementById('addevent_button');
+      var eventStarterButton = document.getElementById('eventStarter')
+      var eventStopperButton = document.getElementById('eventStopper')
+      /**
+       *  On load, called to load the auth2 library and API client library.
+       */
+      function handleClientLoad() {
+        gapi.load('client:auth2', initClient);
+      }
+
+      /**
+       *  Initializes the API client library and sets up sign-in state
+       *  listeners.
+       */
+      function initClient() {
+        gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES
+        }).then(function () {
+          // Listen for sign-in state changes.
+          gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+
+          // Handle the initial sign-in state.
+          updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+          authorizeButton.onclick = handleAuthClick;
+          signoutButton.onclick = handleSignoutClick;
+          addeventButton.onclick = handleAddEventClick;
+          eventStarterButton.onclick = handleEventStarterClick;
+          eventStopperButton.onclick = handleEventStopperClick;
+          let profilAdi = gapi.auth2.getAuthInstance().currentUser.get().dt.Se
+        }, function(error) {
+          appendPre(JSON.stringify(error, null, 2));
+        });
+      }
+
+      /**
+       *  Called when the signed in status changes, to update the UI
+       *  appropriately. After a sign-in, the API is called.
+       */
+      function updateSigninStatus(isSignedIn) {
+        if (isSignedIn) {
+          authorizeButton.style.display = 'none';
+          signoutButton.style.display = 'block';
+          eventStarterButton.style.display = 'inline'
+          document.getElementById("profile-img").src = gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getImageUrl().replace('s96', 's50')
+
+        } else {
+          authorizeButton.style.display = 'block';
+          signoutButton.style.display = 'none';
+          eventStarterButton.style.display = 'none'
+          document.getElementById("profile-img").src = ''
+        }
+      }
+
+      /**
+       *  Sign in the user upon button click.
+       */
+      function handleAuthClick(event) {
+        gapi.auth2.getAuthInstance().signIn();
+      }
+
+      /**
+       *  Sign out the user upon button click.
+       */
+      function handleSignoutClick(event) {
+        gapi.auth2.getAuthInstance().signOut();
+      }
+
+            /**
+       *  add event to user
+       */
+       function handleAddEventClick() {
+        const eventName = document.getElementById("eventName").value
+        let   calendarIdName = 'primary'
+        if(eventName.includes('coding') && gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getId() === '102225018007177505124'){
+            calendarIdName = 'o04pcvlfp7krlpm74kiq25juqs@group.calendar.google.com'
+        }
+        var event = {
+  'summary': eventName,
+  'start': {
+    'dateTime': document.getElementById("eventStartDate").value,
+  },
+  'end': {
+    'dateTime': document.getElementById("eventEndDate").value,
+  },
+};
+
+        gapi.client.calendar.events.insert({
+            'calendarId' : calendarIdName,
+            resource: event
+        }).execute((event) => {
+            appendPre('Event olusturuldu pasam: ' + event.htmlLink )
+        })
+      }
+    
+    
+        function handleEventStarterClick(event) {
+            let startDateString = new Date().toISOString()
+            document.getElementById("eventStartDate").value = startDateString;
+            eventStarterButton.style.display = 'none'
+            eventStopperButton.style.display = 'inline'
+        }
+    
+        function handleEventStopperClick(event) {
+            let endDateString = new Date().toISOString()
+            document.getElementById("eventEndDate").value = endDateString;
+            eventStopperButton.style.display = 'none'
+            addeventButton.style.display = "inline"
+            gapi.client.calendar.calendarList.list({
+                'maxResults' : 8,
+
+            }).then(function (response){
+                console.log('tipi su ' + typeof response);
+                console.log(response.result.items);
+                appendPre('liste alindi pasam ')
+            })
+        }
+      /**
+       * Append a pre element to the body containing the given message
+       * as its text node. Used to display the results of the API call.
+       *
+       * @param {string} message Text to be placed in pre element.
+       */
+      function appendPre(message) {
+        var pre = document.getElementById('content');
+        var textContent = document.createTextNode(message + '\n');
+        pre.appendChild(textContent);
+      }
+
+      /**
+       * Print the summary and start datetime/date of the next ten events in
+       * the authorized user's calendar. If no events are found an
+       * appropriate message is printed.
+       */
+      function listUpcomingEvents() {
+        gapi.client.calendar.events.list({
+          'calendarId': 'primary',
+          'timeMin': (new Date()).toISOString(),
+          'showDeleted': false,
+          'singleEvents': true,
+          'maxResults': 10,
+          'orderBy': 'startTime'
+        }).then(function(response) {
+          var events = response.result.items;
+          appendPre('Upcoming events:');
+
+          if (events.length > 0) {
+            for (i = 0; i < events.length; i++) {
+              var event = events[i];
+              var when = event.start.dateTime;
+              if (!when) {
+                when = event.start.date;
+              }
+              appendPre(event.summary + ' (' + when + ')')
+            }
+          } else {
+            appendPre('No upcoming events found.');
+          }
+        });
+      }
+
+    </script>
+
+    <script async defer src="https://apis.google.com/js/api.js"
+      onload="this.onload=function(){};handleClientLoad()"
+      onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
+
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  </body>
+</html>
